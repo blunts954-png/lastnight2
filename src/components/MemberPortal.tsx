@@ -3,6 +3,13 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
+import {
+    createMember,
+    getMemberByPhone,
+    generateMemberId,
+    generateQrToken,
+    Member as FirebaseMember
+} from '@/lib/firebase'
 
 interface MemberPortalProps {
     onClose: () => void
@@ -72,82 +79,98 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
         setRotateY(0)
     }
 
-    // Simulate login/registration
+    // Handle login/registration with Firebase
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
 
-        const phases = ['VERIFYING DATA ALIGNMENT...', 'ENCRYPTING PAYLOAD...', 'GENERATING SECURE CREDENTIALS...']
-        for (const phase of phases) {
-            setLoadingText(phase)
-            await new Promise(resolve => setTimeout(resolve, 600))
-        }
-
-        const normalizedPhone = phone.replace(/\D/g, '')
-        const isJJ = normalizedPhone === '6613840179' || normalizedPhone === '16613840179'
-
-        if (step === 'login') {
-            if (isJJ) {
-                setMember({
-                    member_id: 'LN-GOD-001',
-                    name: 'Party Boy JJ (CEO OF LAST PARTY ENTERTAINMENT)',
-                    tier: 'God Card',
-                    points: 999999,
-                    attendance_count: 999,
-                    member_since: '2020-01-01'
-                })
-                setQrToken(`LN-GOD-001-${Date.now()}`)
-                setJustRegistered(false)
-                setStep('dashboard')
-                onLogin()
-            } else {
-                // Simulate found member
-                setMember({
-                    member_id: 'LN-A8K3M2',
-                    name: 'Demo Member',
-                    tier: 'Blacklist',
-                    points: 450,
-                    attendance_count: 12,
-                    member_since: '2025-03-01'
-                })
-                setQrToken(`LN-A8K3M2-${Date.now()}`)
-                setJustRegistered(false)
-                setStep('dashboard')
-                onLogin()
+        try {
+            const phases = ['INITIALIZING SECURE LINK...', 'VERIFYING DATA ALIGNMENT...', 'SYNCING WITH FIRESTORE...']
+            for (const phase of phases) {
+                setLoadingText(phase)
+                await new Promise(resolve => setTimeout(resolve, 500))
             }
-        } else {
-            // Create new member
-            if (isJJ) {
-                setMember({
-                    member_id: 'LN-GOD-001',
-                    name: 'Party Boy JJ (CEO OF LAST PARTY ENTERTAINMENT)',
-                    email: email,
-                    tier: 'God Card',
-                    points: 999999,
-                    attendance_count: 999,
-                    member_since: new Date().toISOString().split('T')[0]
-                })
-                setQrToken(`LN-GOD-001-${Date.now()}`)
-                setJustRegistered(true)
-                setStep('dashboard')
-                onLogin()
+
+            const normalizedPhone = phone.replace(/\D/g, '')
+            const isJJ = normalizedPhone === '6613840179' || normalizedPhone === '16613840179'
+
+            if (step === 'login') {
+                // Check if member exists in Firebase
+                const existingMember = await getMemberByPhone(normalizedPhone)
+
+                if (isJJ) {
+                    setMember({
+                        member_id: 'LN-GOD-001',
+                        name: 'Party Boy JJ (CEO OF LAST PARTY ENTERTAINMENT)',
+                        tier: 'God Card',
+                        points: 999999,
+                        attendance_count: 999,
+                        member_since: '2020-01-01'
+                    })
+                    setQrToken(generateQrToken('LN-GOD-001'))
+                    setJustRegistered(false)
+                    setStep('dashboard')
+                    onLogin()
+                } else if (existingMember) {
+                    setMember({
+                        member_id: existingMember.member_id,
+                        name: existingMember.name,
+                        email: existingMember.email,
+                        tier: existingMember.tier,
+                        points: existingMember.points,
+                        attendance_count: existingMember.attendance_count,
+                        member_since: existingMember.member_since
+                    })
+                    setQrToken(existingMember.qr_token || generateQrToken(existingMember.member_id))
+                    setJustRegistered(false)
+                    setStep('dashboard')
+                    onLogin()
+                } else {
+                    alert('MEMBER NOT FOUND. PLEASE APPLY FOR A BLACK CARD.')
+                    setStep('register')
+                }
             } else {
-                const newMember: Member = {
-                    member_id: generateMemberId(),
+                // Register new member in Firebase
+                const memberId = isJJ ? 'LN-GOD-001' : generateMemberId()
+                const newFirebaseMember: any = {
+                    member_id: memberId,
                     name: name,
                     email: email,
-                    tier: 'Blacklist',
-                    points: 0,
-                    attendance_count: 0,
-                    member_since: new Date().toISOString().split('T')[0]
+                    phone: normalizedPhone,
+                    instagram: instagram,
+                    dob: dob,
+                    tier: isJJ ? 'Inner Circle' : 'Blacklist', // Firebase schema mapping
+                    points: isJJ ? 999999 : 0,
+                    attendance_count: isJJ ? 999 : 0,
+                    member_since: new Date().toISOString().split('T')[0],
+                    status: true,
+                    banned: false,
+                    qr_token: generateQrToken(memberId),
+                    last_active: new Date().toISOString()
                 }
-                setMember(newMember)
-                setQrToken(`${newMember.member_id}-${Date.now()}`)
+
+                await createMember(newFirebaseMember)
+
+                setMember({
+                    member_id: memberId,
+                    name: name,
+                    email: email,
+                    tier: isJJ ? 'God Card' : 'Blacklist',
+                    points: isJJ ? 999999 : 0,
+                    attendance_count: isJJ ? 999 : 0,
+                    member_since: newFirebaseMember.member_since
+                })
+                setQrToken(newFirebaseMember.qr_token)
                 setJustRegistered(true)
                 setStep('dashboard')
+                onLogin()
             }
+        } catch (error) {
+            console.error('Portal Error:', error)
+            alert('SYSTEM ERROR: UNABLE TO SYNC WITH THE GRID.')
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     return (

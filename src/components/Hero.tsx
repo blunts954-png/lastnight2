@@ -62,8 +62,8 @@ export default function Hero() {
                 <div className="absolute inset-0 bg-gradient-to-b from-pitch-black via-transparent to-pitch-black z-10" />
                 <div className="absolute inset-0 bg-pitch-black/55 z-10" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(0,240,255,0.14),transparent_38%),radial-gradient(circle_at_70%_25%,rgba(176,38,255,0.18),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(255,51,51,0.15),transparent_38%)] z-10" />
-                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <span className="font-monument text-[38vw] md:text-[24rem] text-alert-red/8 leading-none select-none">
+                <div className="absolute inset-0 flex items-center justify-end pr-4 md:pr-20 z-10 pointer-events-none overflow-hidden">
+                    <span className="font-monument text-[50vw] md:text-[32rem] text-alert-red/10 leading-none select-none translate-x-1/4">
                         13
                     </span>
                 </div>
@@ -117,11 +117,11 @@ export default function Hero() {
 
                 {/* Countdown Label - Industrial Style */}
                 <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
-                    <div className="h-[1px] w-8 bg-neon-cyan/50" />
-                    <p className="font-mono text-neon-cyan text-[10px] md:text-xs uppercase tracking-[0.5em] font-bold">
+                    <div className="h-[1px] w-8 bg-alert-red/50" />
+                    <p className="font-mono text-alert-red text-[10px] md:text-xs uppercase tracking-[0.5em] font-bold">
                         ESTIMATED ARRIVAL
                     </p>
-                    <div className="h-[1px] w-8 bg-neon-cyan/50" />
+                    <div className="h-[1px] w-8 bg-alert-red/50" />
                 </motion.div>
 
                 {/* Countdown Timer - Dashboard Style */}
@@ -167,14 +167,14 @@ export default function Hero() {
 
                     <div className="flex flex-col items-center group">
                         <div className="relative">
-                            <div className="absolute -inset-1 bg-neon-purple/20 blur-md rounded-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute -inset-1 bg-alert-red/20 blur-md rounded-sm opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="w-20 h-20 md:w-28 md:h-28 border border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-center relative">
-                                <span className="text-neon-cyan font-bold text-4xl md:text-6xl tracking-tighter text-glow-cyan">
+                                <span className="text-alert-red font-bold text-4xl md:text-6xl tracking-tighter text-glow-red">
                                     {String(timeLeft.seconds).padStart(2, '0')}
                                 </span>
                             </div>
                         </div>
-                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold text-neon-cyan">SECONDS</span>
+                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold text-alert-red">SECONDS</span>
                     </div>
                 </motion.div>
 

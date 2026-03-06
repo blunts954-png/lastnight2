@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 const galleryImages = [
-    { src: '/party1.jpg', alt: 'Past event crowd and lighting 1' },
-    { src: '/party2.jpg', alt: 'Past event crowd and lighting 2' },
+    { src: '/1DD98BB6-A6D0-4B8E-8B25-2BBE6A40E456.jpeg', alt: 'Past event crowd and lighting 1' },
+    { src: '/146DCE7A-FE8C-4EED-9EBE-43E4173B2B38.jpeg', alt: 'Past event crowd and lighting 2' },
     { src: '/party3.jpg', alt: 'Past event crowd and lighting 3' },
-    { src: '/party4.jpg', alt: 'Past event crowd and lighting 4' },
-    { src: '/party5.jpg', alt: 'Past event crowd and lighting 5' },
+    { src: '/IMG_0636.png', alt: 'Past event crowd and lighting 4' },
+    { src: '/IMG_0634.png', alt: 'Past event crowd and lighting 5' },
+    { src: '/Shawn2blacklive.jpeg', alt: 'Shawn live performance' },
 ]
 
 export default function PastEventsSection() {
