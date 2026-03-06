@@ -12,7 +12,11 @@ import LastNightAlbum from '@/components/LastNightAlbum'
 import TicketTiers from '@/components/TicketTiers'
 import BlacklistSection from '@/components/BlacklistSection'
 import Footer from '@/components/Footer'
-import MemberPortal from '@/components/MemberPortal'
+import dynamic from 'next/dynamic'
+
+const MemberPortal = dynamic(() => import('@/components/MemberPortal'), {
+    ssr: false,
+})
 import ArchitectChatbot from '@/components/ArchitectChatbot'
 import SplashPage from '@/components/SplashPage'
 import SiteOverlay from '@/components/SiteOverlay'

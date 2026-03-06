@@ -1,4 +1,5 @@
 // Firebase configuration
+'use client'
 // Replace these values with your Firebase project credentials
 
 import { initializeApp, getApps, getApp } from 'firebase/app'
@@ -34,10 +35,10 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ""
 }
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
-const db = getFirestore(app)
-const auth = getAuth(app)
+// Initialize Firebase only on the client side
+const app = (typeof window !== 'undefined' && !getApps().length) ? initializeApp(firebaseConfig) : (getApps().length ? getApp() : null as any)
+const db = typeof window !== 'undefined' ? getFirestore(app) : null as any
+const auth = typeof window !== 'undefined' ? getAuth(app) : null as any
 
 // Types
 export interface Member {
