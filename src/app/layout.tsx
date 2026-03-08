@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { siteConfig } from '@/lib/site'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const siteUrl = siteConfig.siteUrl
 const sameAs = siteConfig.contact.instagramUrl ? [siteConfig.contact.instagramUrl] : undefined
@@ -192,6 +193,7 @@ export default function RootLayout({
                     />
                     {children}
                 </Providers>
+                <SpeedInsights />
             </body>
         </html>
     )
