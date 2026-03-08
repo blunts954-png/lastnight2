@@ -41,6 +41,7 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
     const [qrToken, setQrToken] = useState('')
     const [justRegistered, setJustRegistered] = useState(false)
 
+
     // 3D tilt effect refs
     const cardRef = useRef<HTMLDivElement>(null)
     const [rotateX, setRotateX] = useState(0)
@@ -151,7 +152,7 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
                     email: email,
                     phone: normalizedPhone,
                     dob: dob,
-                    tier: isJJ ? 'Inner Circle' : 'Blacklist', // Firebase schema mapping
+                    tier: isJJ ? 'Inner Circle' : 'Blacklist',
                     points: isJJ ? 999999 : 0,
                     attendance_count: isJJ ? 999 : 0,
                     member_since: new Date().toISOString().split('T')[0],
@@ -161,7 +162,13 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
                     last_active: new Date().toISOString()
                 }
 
-                await createMember(newFirebaseMember)
+                // Add a timeout to the createMember call
+                const createPromise = createMember(newFirebaseMember)
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 10000)
+                )
+
+                await Promise.race([createPromise, timeoutPromise])
 
                 setMember({
                     member_id: memberId,

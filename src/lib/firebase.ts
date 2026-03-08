@@ -29,9 +29,11 @@ export const getFirebase = async () => {
         import('firebase/auth')
     ])
 
+    console.log("Firebase: Initializing app with config:", { ...firebaseConfig, apiKey: '***' })
     const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
     const db = getFirestore(app)
     const auth = getAuth(app)
+    console.log("Firebase: Connected successfully.")
 
     firebaseInstance = {
         app,
@@ -97,8 +99,8 @@ export const generateQrToken = (memberId: string): string => {
     return `${memberId}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
 }
 
-// Database operations
 export const createMember = async (memberData: Omit<Member, 'uid'>): Promise<Member> => {
+    console.log("Firebase: Attempting to create member:", memberData.member_id)
     const fb = await getFirebase()
     if (!fb) throw new Error('Firebase not initialized')
 
@@ -110,8 +112,14 @@ export const createMember = async (memberData: Omit<Member, 'uid'>): Promise<Mem
         uid: memberData.member_id as string
     } as Member
 
-    await setDoc(doc(db, 'members', memberData.member_id), newMember)
-    return newMember
+    try {
+        await setDoc(doc(db, 'members', memberData.member_id), newMember)
+        console.log("Firebase: Member created successfully.")
+        return newMember
+    } catch (err) {
+        console.error("Firebase: Error in setDoc:", err)
+        throw err
+    }
 }
 
 export const getMember = async (memberId: string): Promise<Member | null> => {
@@ -215,35 +223,55 @@ export const getTicketByToken = async (qrToken: string): Promise<Ticket | null> 
 
 export const validateScan = async (type: 'member' | 'ticket', identifier: string): Promise<{ success: boolean; data?: any; error?: string }> => {
     const fb = await getFirebase()
-    if (!fb) return { success: false, error: 'GRID OFFLINE' }
+    if (!fb) {
+        console.error('Firebase: validateScan failed - Firebase not initialized.')
+        return { success: false, error: 'GRID OFFLINE' }
+    }
 
     try {
         if (type === 'member') {
+            console.log(`Firebase: Validating member with identifier: ${identifier}`)
             // Check by ID or Phone
             let member = await getMember(identifier)
-            if (!member) member = await getMemberByPhone(identifier.replace(/\D/g, ''))
+            if (!member) {
+                const phoneNumber = identifier.replace(/\D/g, '')
+                console.log(`Firebase: Member not found by ID, attempting by phone: ${phoneNumber}`)
+                member = await getMemberByPhone(phoneNumber)
+            }
 
             if (member) {
+                console.log(`Firebase: Member found: ${member.member_id}, banned status: ${member.banned}`)
                 if (member.banned) return { success: false, error: 'BANNED', data: member }
                 return { success: true, data: member }
+            } else {
+                console.log(`Firebase: Member not found for identifier: ${identifier}`)
             }
         } else {
+            console.log(`Firebase: Validating ticket with token: ${identifier}`)
             // Check Ticket by Token
             const ticket = await getTicketByToken(identifier)
             if (ticket) {
+                console.log(`Firebase: Ticket found: ${ticket.ticket_id}, status: ${ticket.status}`)
                 if (ticket.status === 'paid') return { success: true, data: ticket }
                 return { success: false, error: 'CANCELLED/UNPAID', data: ticket }
+            } else {
+                console.log(`Firebase: Ticket not found for token: ${identifier}`)
             }
         }
     } catch (err) {
-        console.error('Validation Error:', err)
+        console.error('Firebase: Validation Error:', err)
     }
+    console.log(`Firebase: Validation failed for type: ${type}, identifier: ${identifier} - NOT FOUND`)
     return { success: false, error: 'NOT FOUND' }
 }
 
 export const logout = async (): Promise<void> => {
     const fb = await getFirebase()
-    if (!fb) return
+    if (!fb) {
+        console.warn('Firebase: Logout attempted but Firebase not initialized.')
+        return
+    }
     const { auth, auth_methods } = fb
+    console.log('Firebase: Attempting to log out user.')
     await auth_methods.signOut(auth)
 }
