@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function SplashPage({ onFinish }: { onFinish: () => void }) {
-    const [status, setStatus] = useState('INITIALIZING...')
+    const { t } = useLanguage()
+    const [status, setStatus] = useState(t.splash.statuses[0])
     const [progress, setProgress] = useState(0)
 
     useEffect(() => {
@@ -13,13 +15,7 @@ export default function SplashPage({ onFinish }: { onFinish: () => void }) {
         }, 10000)
 
         const statusInterval = setInterval(() => {
-            const statuses = [
-                'INITIALIZING...',
-                'UPLOADING VIBES...',
-                'DECRYPTING ACCESS...',
-                'CALIBRATING LASERS...',
-                'ARE YOU READY?'
-            ]
+            const statuses = t.splash.statuses
             const index = Math.floor((Date.now() / 2000) % statuses.length)
             setStatus(statuses[index])
             setProgress(prev => Math.min(prev + 1, 100))
@@ -29,7 +25,7 @@ export default function SplashPage({ onFinish }: { onFinish: () => void }) {
             clearTimeout(timer)
             clearInterval(statusInterval)
         }
-    }, [onFinish])
+    }, [onFinish, t.splash.statuses])
 
     return (
         <motion.div
@@ -60,7 +56,7 @@ export default function SplashPage({ onFinish }: { onFinish: () => void }) {
                     transition={{ duration: 1 }}
                     className="mb-12 w-32 h-32"
                 >
-                    <img src="/lastnight_luxury_logo.png" alt="LL" className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(176,38,255,0.5)]" />
+                    <img src="/logo.png" alt="LL" className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(176,38,255,0.5)]" />
                 </motion.div>
 
                 <motion.h1
@@ -82,8 +78,8 @@ export default function SplashPage({ onFinish }: { onFinish: () => void }) {
                 </div>
 
                 <div className="flex justify-between w-full font-mono text-[10px] text-cold-gray tracking-[0.3em] uppercase">
-                    <span>System Reload</span>
-                    <span className="text-neon-cyan font-bold">100% Secure</span>
+                    <span>{t.splash.systemReload}</span>
+                    <span className="text-neon-cyan font-bold">{t.splash.secure}</span>
                 </div>
             </div>
 

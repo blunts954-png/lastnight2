@@ -12,6 +12,7 @@ import LastNightAlbum from '@/components/LastNightAlbum'
 import TicketTiers from '@/components/TicketTiers'
 import BlacklistSection from '@/components/BlacklistSection'
 import Footer from '@/components/Footer'
+import PaymentModal from '@/components/PaymentModal'
 import dynamic from 'next/dynamic'
 
 const MemberPortal = dynamic(() => import('@/components/MemberPortal'), {
@@ -26,6 +27,9 @@ export default function Home() {
     const [showPortal, setShowPortal] = useState(false)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [showSplash, setShowSplash] = useState(true)
+    const [portalInitialStep, setPortalInitialStep] = useState<'login' | 'register'>('login')
+    const [showPayment, setShowPayment] = useState(false)
+    const [paymentData, setPaymentData] = useState({ amount: 0, ticketName: '' })
 
     // Check if splash was already shown in this session
     useEffect(() => {
@@ -38,6 +42,22 @@ export default function Home() {
     const handleSplashFinish = () => {
         setShowSplash(false)
         sessionStorage.setItem('hasSeenSplash', 'true')
+    }
+
+    const openPortal = (initialStep: 'login' | 'register') => {
+        setPortalInitialStep(initialStep)
+        setShowPortal(true)
+    }
+
+    const openPayment = (amount: number, ticketName: string) => {
+        setPaymentData({ amount, ticketName })
+        setShowPayment(true)
+    }
+
+    const handlePaymentSuccess = (details: any) => {
+        setShowPayment(false)
+        alert('PAYMENT SUCCESSFUL. YOUR ACCESS IS GRANTED.')
+        // In a real app, you'd probably redirect or update user state here
     }
 
     return (
@@ -58,7 +78,7 @@ export default function Home() {
 
                 {/* Navigation */}
                 <Navigation
-                    onBlacklistClick={() => setShowPortal(true)}
+                    onBlacklistClick={() => openPortal(isAuthenticated ? 'login' : 'register')}
                     isAuthenticated={isAuthenticated}
                 />
 
@@ -71,9 +91,11 @@ export default function Home() {
                     <LastNightAlbum />
                     <TicketTiers
                         isAuthenticated={isAuthenticated}
-                        onLoginClick={() => setShowPortal(true)}
+                        onBlackCardClick={() => openPortal('register')}
+                        onPreorderClick={() => openPayment(10, 'Friday the 13th Preorder')}
+                        onMemberTicketClick={() => openPayment(5, 'Black Card Member Ticket')}
                     />
-                    <BlacklistSection onJoinClick={() => setShowPortal(true)} />
+                    <BlacklistSection onJoinClick={() => openPortal('register')} />
                     <Footer />
                 </div>
 
@@ -83,8 +105,19 @@ export default function Home() {
                 {/* Member Portal Modal */}
                 {showPortal && (
                     <MemberPortal
+                        initialStep={portalInitialStep}
                         onClose={() => setShowPortal(false)}
                         onLogin={() => setIsAuthenticated(true)}
+                    />
+                )}
+
+                {/* Payment Modal */}
+                {showPayment && (
+                    <PaymentModal
+                        amount={paymentData.amount}
+                        ticketName={paymentData.ticketName}
+                        onClose={() => setShowPayment(false)}
+                        onSuccess={handlePaymentSuccess}
                     />
                 )}
             </main>

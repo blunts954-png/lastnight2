@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useLanguage } from '@/lib/LanguageContext'
 
 const EVENT_DATE = new Date('2026-03-13T22:00:00-08:00')
 
@@ -12,6 +13,7 @@ export default function Hero() {
         minutes: 0,
         seconds: 0
     })
+    const { language, t } = useLanguage()
 
     useEffect(() => {
         const calculateTimeLeft = () => {
@@ -62,10 +64,25 @@ export default function Hero() {
                 <div className="absolute inset-0 bg-gradient-to-b from-pitch-black via-transparent to-pitch-black z-10" />
                 <div className="absolute inset-0 bg-pitch-black/55 z-10" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(0,240,255,0.14),transparent_38%),radial-gradient(circle_at_70%_25%,rgba(176,38,255,0.18),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(255,51,51,0.15),transparent_38%)] z-10" />
-                <div className="absolute inset-0 flex items-center justify-end pr-4 md:pr-20 z-10 pointer-events-none overflow-hidden">
-                    <span className="font-monument text-[50vw] md:text-[32rem] text-alert-red/10 leading-none select-none translate-x-1/4">
+                <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+                    <motion.span
+                        aria-hidden="true"
+                        animate={{
+                            x: [0, -48, 32, -20, 0],
+                            y: [0, 74, -34, 40, 0],
+                            rotate: [0, 5, -7, 3, 0],
+                            scale: [1, 1.05, 0.96, 1.03, 1]
+                        }}
+                        transition={{
+                            duration: 15,
+                            ease: 'easeInOut',
+                            repeat: Infinity,
+                            repeatType: 'mirror'
+                        }}
+                        className="absolute right-[-10vw] md:right-[4vw] top-[8%] font-monument text-[52vw] md:text-[30rem] text-alert-red/10 leading-none select-none"
+                    >
                         13
-                    </span>
+                    </motion.span>
                 </div>
                 <motion.img
                     initial={{ scale: 1.1, opacity: 0 }}
@@ -89,15 +106,15 @@ export default function Hero() {
                     <motion.h1
                         variants={itemVariants}
                         className="font-monument text-5xl md:text-8xl tracking-[0.14em] text-static-white leading-none text-jitter"
-                        data-text="FRIDAY."
+                        data-text={t.hero.heading.split(' ')[0]}
                     >
-                        FRIDAY.
+                        {t.hero.heading.split(' ')[0]}.
                     </motion.h1>
                     <motion.h2
                         variants={itemVariants}
                         className="font-mono text-4xl md:text-7xl lg:text-7xl font-bold tracking-[0.1em] text-neon-purple text-glow-purple leading-tight"
                     >
-                        THE 13TH.
+                        {t.hero.heading.split(' ').slice(1).join(' ')}.
                     </motion.h2>
                 </motion.div>
 
@@ -112,14 +129,16 @@ export default function Hero() {
                     variants={itemVariants}
                     className="font-inter text-static-white/80 text-sm md:text-base max-w-2xl mx-auto mb-14 px-3"
                 >
-                    One night only. Secure the preorder now, or unlock 50% off with the new Black Card reward program.
+                    {language === 'en'
+                        ? 'One night only. Secure the preorder now, or unlock 50% off with the new Black Card reward program.'
+                        : 'Solo una noche. Asegura la pre-venta ahora, o desbloquea el 50% con el programa de recompensas de Tarjeta Negra.'}
                 </motion.p>
 
                 {/* Countdown Label - Industrial Style */}
                 <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
                     <div className="h-[1px] w-8 bg-alert-red/50" />
                     <p className="font-mono text-alert-red text-[10px] md:text-xs uppercase tracking-[0.5em] font-bold">
-                        ESTIMATED ARRIVAL
+                        {language === 'en' ? 'ESTIMATED ARRIVAL' : 'LLEGADA ESTIMADA'}
                     </p>
                     <div className="h-[1px] w-8 bg-alert-red/50" />
                 </motion.div>
@@ -138,7 +157,9 @@ export default function Hero() {
                                 </span>
                             </div>
                         </div>
-                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">DAYS</span>
+                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">
+                            {language === 'en' ? 'DAYS' : 'DÍAS'}
+                        </span>
                     </div>
 
                     <div className="flex flex-col items-center group">
@@ -150,7 +171,9 @@ export default function Hero() {
                                 </span>
                             </div>
                         </div>
-                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">HOURS</span>
+                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">
+                            {language === 'en' ? 'HOURS' : 'HORAS'}
+                        </span>
                     </div>
 
                     <div className="flex flex-col items-center group">
@@ -162,7 +185,9 @@ export default function Hero() {
                                 </span>
                             </div>
                         </div>
-                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">MINUTES</span>
+                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold">
+                            {language === 'en' ? 'MINUTES' : 'MINUTOS'}
+                        </span>
                     </div>
 
                     <div className="flex flex-col items-center group">
@@ -174,7 +199,9 @@ export default function Hero() {
                                 </span>
                             </div>
                         </div>
-                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold text-alert-red">SECONDS</span>
+                        <span className="text-cold-gray mt-3 text-[9px] tracking-[.3em] uppercase font-bold text-alert-red">
+                            {language === 'en' ? 'SECONDS' : 'SEGUNDOS'}
+                        </span>
                     </div>
                 </motion.div>
 
@@ -186,14 +213,14 @@ export default function Hero() {
                     >
                         <div className="absolute inset-0 bg-neon-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                         <span className="relative font-mono text-xs font-bold tracking-[0.3em] text-neon-cyan group-hover:text-white transition-colors duration-300">
-                            SECURE ACCESS
+                            {language === 'en' ? 'SECURE ACCESS' : 'ASEGURAR ACCESO'}
                         </span>
                     </a>
                     <a
                         href="#past-events"
                         className="relative group inline-flex items-center justify-center px-8 py-4 bg-transparent border border-alert-red/70 text-alert-red font-mono text-xs font-bold tracking-[0.25em] hover:bg-alert-red/10 transition-all duration-300"
                     >
-                        PAST EVENTS
+                        {t.nav.pastEvents}
                     </a>
                 </motion.div>
 

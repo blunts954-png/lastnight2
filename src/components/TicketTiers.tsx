@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useLanguage } from '@/lib/LanguageContext'
 
 interface TicketTiersProps {
     isAuthenticated: boolean
-    onLoginClick: () => void
+    onBlackCardClick: () => void
+    onPreorderClick: () => void
+    onMemberTicketClick: () => void
 }
 
 const ticketOptions = [
@@ -35,9 +38,42 @@ const ticketOptions = [
     }
 ]
 
-export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTiersProps) {
+export default function TicketTiers({
+    isAuthenticated,
+    onBlackCardClick,
+    onPreorderClick,
+    onMemberTicketClick
+}: TicketTiersProps) {
     const [ticketsLeft, setTicketsLeft] = useState(14)
     const [cardsIssued, setCardsIssued] = useState(3)
+    const { language, t } = useLanguage()
+
+    const ticketOptions = [
+        {
+            id: 'preorder',
+            name: language === 'en' ? 'Friday the 13th Preorder' : 'Pre-venta Viernes 13',
+            price: 10,
+            badge: language === 'en' ? 'Best Value' : 'Mejor Valor',
+            highlight: true,
+            features: [
+                t.tickets.features.guaranteed,
+                t.tickets.features.limited,
+                t.tickets.features.doorPrice
+            ]
+        },
+        {
+            id: 'black-card',
+            name: language === 'en' ? 'Black Card Reward Program' : 'Programa de Tarjeta Negra',
+            price: 5,
+            badge: '50% Off',
+            highlight: false,
+            features: [
+                t.tickets.features.memberPrice,
+                t.tickets.features.lockedIn,
+                t.tickets.features.exclusive
+            ]
+        }
+    ]
 
     // Simulate real-time scarcity
     useEffect(() => {
@@ -64,14 +100,14 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                 >
                     <div className="border border-neon-cyan px-4 py-1 mb-8">
                         <span className="font-mono text-neon-cyan text-xs md:text-sm tracking-[0.2em] font-bold">
-                            TICKETS
+                            {t.nav.tickets}
                         </span>
                     </div>
                     <h2 className="font-serif font-normal text-4xl md:text-5xl lg:text-6xl text-static-white tracking-widest">
-                        PICK YOUR ACCESS
+                        {t.tickets.title}
                     </h2>
                     <p className="font-inter text-cold-gray mt-5 max-w-2xl text-sm md:text-base">
-                        Two ways in for Friday the 13th. Preorder at $10, or unlock the $5 Black Card member ticket.
+                        {t.tickets.subtitle}
                     </p>
 
                     {/* SCARCITY ENGINE */}
@@ -85,13 +121,13 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                             <div className="absolute inset-0 bg-alert-red/5 mix-blend-overlay animate-pulse"></div>
                             <span className="w-2 h-2 rounded-full bg-alert-red animate-pulse mr-2 shadow-[0_0_8px_rgba(255,51,51,1)]"></span>
                             <span className="font-mono text-alert-red text-xs tracking-widest uppercase font-bold relative z-10 transition-all">
-                                ONLY {ticketsLeft} PREORDERS REMAINING
+                                {t.tickets.preorderRemaining.replace('{count}', ticketsLeft.toString())}
                             </span>
                         </div>
                         <div className="bg-neon-purple/10 border border-neon-purple px-4 py-2 rounded-sm shadow-[0_0_15px_rgba(176,38,255,0.15)] flex items-center justify-center">
                             <span className="w-2 h-2 rounded-full bg-neon-purple animate-pulse mr-2 shadow-[0_0_8px_rgba(176,38,255,1)]"></span>
                             <span className="font-mono text-neon-purple text-xs tracking-widest uppercase font-bold transition-all">
-                                {cardsIssued} CARDS ISSUED LAST HOUR
+                                {t.tickets.cardsIssued.replace('{count}', cardsIssued.toString())}
                             </span>
                         </div>
                     </motion.div>
@@ -101,8 +137,8 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                     {ticketOptions.map((ticket, index) => {
                         const isBlackCard = ticket.id === 'black-card'
                         const buttonLabel = isBlackCard
-                            ? (isAuthenticated ? 'Claim $5 Ticket' : 'Sign Up for Black Card')
-                            : 'Preorder for $10'
+                            ? (isAuthenticated ? t.tickets.claimTicket : t.tickets.signUp)
+                            : t.tickets.preorderLabel
 
                         return (
                             <motion.div
@@ -126,7 +162,7 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                                             ${ticket.price}
                                         </span>
                                         <span className="font-mono text-cold-gray text-xs ml-2 tracking-widest uppercase">
-                                            / Ticket
+                                            / {language === 'en' ? 'Ticket' : 'Boleto'}
                                         </span>
                                     </div>
 
@@ -153,7 +189,17 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                                     </ul>
 
                                     <button
-                                        onClick={isBlackCard && !isAuthenticated ? onLoginClick : undefined}
+                                        onClick={() => {
+                                            if (isBlackCard) {
+                                                if (isAuthenticated) {
+                                                    onMemberTicketClick()
+                                                } else {
+                                                    onBlackCardClick()
+                                                }
+                                            } else {
+                                                onPreorderClick()
+                                            }
+                                        }}
                                         className={`w-full py-4 font-mono text-sm font-bold tracking-[0.2em] uppercase transition-all duration-300 border rounded-sm ${ticket.highlight
                                             ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black'
                                             : 'bg-neon-purple/20 border-neon-purple text-neon-purple hover:bg-neon-purple hover:text-white'
@@ -174,7 +220,9 @@ export default function TicketTiers({ isAuthenticated, onLoginClick }: TicketTie
                     viewport={{ once: true }}
                     className="text-center font-mono text-cold-gray text-[11px] tracking-[0.15em] mt-10 uppercase leading-relaxed"
                 >
-                    Black Card pricing requires registration and digital card activation.
+                    {language === 'en'
+                        ? 'Black Card pricing requires registration and digital card activation.'
+                        : 'El precio de la Tarjeta Negra requiere registro y activación de tarjeta digital.'}
                 </motion.p>
             </div>
         </section>

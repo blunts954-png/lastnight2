@@ -1,12 +1,16 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { siteConfig } from '@/lib/site'
+import { useLanguage } from '@/lib/LanguageContext'
 
 interface BlacklistSectionProps {
     onJoinClick: () => void
 }
 
 export default function BlacklistSection({ onJoinClick }: BlacklistSectionProps) {
+    const { language, t } = useLanguage()
+
     return (
         <section id="blacklist" className="section-padding relative">
             <div className="container-custom">
@@ -19,44 +23,26 @@ export default function BlacklistSection({ onJoinClick }: BlacklistSectionProps)
                 >
                     {/* Section Label */}
                     <span className="font-inter text-electric-indigo text-sm uppercase tracking-[0.3em]">
-                        Exclusive Access
+                        {t.blacklist.label}
                     </span>
 
                     {/* Title */}
                     <h2 className="font-monument text-3xl md:text-5xl lg:text-5xl mt-4 mb-6 leading-tight uppercase">
-                        LAST NIGHT ENTERTAINMENT
+                        {t.blacklist.title}
                     </h2>
 
                     <p className="font-monument text-2xl md:text-3xl text-cold-gray mb-8">
-                        NOT FOR EVERYONE
+                        {language === 'en' ? siteConfig.ageGateLabel : 'MAYORES DE 18 ÚNICAMENTE.'}
                     </p>
 
                     {/* Description */}
                     <p className="font-inter text-cold-gray text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-12">
-                        The Blacklist is our exclusive loyalty program. Members receive priority entry,
-                        discounted tickets, and a digital membership card that lives in their phone wallet.
+                        {t.blacklist.description}
                     </p>
 
                     {/* Benefits */}
                     <div className="grid md:grid-cols-2 gap-6 mb-12">
-                        {[
-                            {
-                                title: 'Priority Entry',
-                                description: 'Coming soon.'
-                            },
-                            {
-                                title: 'Member Pricing',
-                                description: 'Unlock the $5 Friday the 13th member ticket'
-                            },
-                            {
-                                title: 'Digital Card',
-                                description: 'Add to Apple/Google Wallet'
-                            },
-                            {
-                                title: 'Loyalty Point Rewards',
-                                description: 'Coming soon.'
-                            }
-                        ].map((benefit, index) => (
+                        {t.blacklist.benefits.map((benefit: any, index: number) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
@@ -86,14 +72,13 @@ export default function BlacklistSection({ onJoinClick }: BlacklistSectionProps)
                             onClick={onJoinClick}
                             className="btn-primary neon-glow text-lg px-12"
                         >
-                            Apply for Membership
+                            {t.blacklist.cta}
                         </button>
                     </motion.div>
 
                     {/* Disclaimer */}
                     <p className="font-inter text-cold-gray text-xs mt-8 max-w-md mx-auto">
-                        * Membership is selective. Not all applications are approved.
-                        Previous event attendance and social media presence may be considered.
+                        {t.blacklist.disclaimer}
                     </p>
                 </motion.div>
             </div>

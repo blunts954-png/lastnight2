@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 import {
@@ -8,12 +8,12 @@ import {
     getMemberByPhone,
     generateMemberId,
     generateQrToken,
-    Member as FirebaseMember
 } from '@/lib/firebase'
 
 interface MemberPortalProps {
     onClose: () => void
     onLogin: () => void
+    initialStep?: 'login' | 'register'
 }
 
 interface Member {
@@ -26,12 +26,11 @@ interface Member {
     member_since: string
 }
 
-export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
-    const [step, setStep] = useState<'login' | 'register' | 'dashboard'>('login')
+export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }: MemberPortalProps) {
+    const [step, setStep] = useState<'login' | 'register' | 'dashboard'>(initialStep)
     const [phone, setPhone] = useState('')
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
-    const [instagram, setInstagram] = useState('')
     const [dob, setDob] = useState('')
     const [optIn, setOptIn] = useState(false)
 
@@ -45,16 +44,11 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
     const cardRef = useRef<HTMLDivElement>(null)
     const [rotateX, setRotateX] = useState(0)
     const [rotateY, setRotateY] = useState(0)
-
-    // Generate unique member ID
-    const generateMemberId = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        let result = 'LN-'
-        for (let i = 0; i < 6; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return result
-    }
+    const maxDob = (() => {
+        const date = new Date()
+        date.setFullYear(date.getFullYear() - 18)
+        return date.toISOString().split('T')[0]
+    })()
 
     // Handle card tilt effect
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -93,6 +87,15 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
 
             const normalizedPhone = phone.replace(/\D/g, '')
             const isJJ = normalizedPhone === '6613840179' || normalizedPhone === '16613840179'
+
+            if (step === 'register') {
+                const birthDate = new Date(`${dob}T00:00:00`)
+                if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(`${maxDob}T23:59:59`)) {
+                    alert('BLACK CARD APPLICATIONS ARE LIMITED TO GUESTS WHO ARE 18 OR OLDER.')
+                    setLoading(false)
+                    return
+                }
+            }
 
             if (step === 'login') {
                 // Check if member exists in Firebase
@@ -137,7 +140,6 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
                     name: name,
                     email: email,
                     phone: normalizedPhone,
-                    instagram: instagram,
                     dob: dob,
                     tier: isJJ ? 'Inner Circle' : 'Blacklist', // Firebase schema mapping
                     points: isJJ ? 999999 : 0,
@@ -209,7 +211,7 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
                             <p className="font-mono text-cold-gray text-center text-xs tracking-widest mb-6">
                                 {step === 'login'
                                     ? 'ENTER YOUR PHONE NUMBER'
-                                    : 'APPLY FOR THE LOYALTY CARD'}
+                                    : 'APPLY WITH NAME, EMAIL, BIRTHDAY, AND PHONE'}
                             </p>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -243,25 +245,13 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
                                         </div>
                                         <div>
                                             <label className="block font-mono text-neon-cyan text-xs tracking-widest mb-2 font-bold uppercase">
-                                                Instagram Handle
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={instagram}
-                                                onChange={(e) => setInstagram(e.target.value)}
-                                                className="w-full px-4 py-3 bg-black/50 border border-neon-purple rounded text-static-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan focus:outline-none transition-all"
-                                                placeholder="@USERNAME"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-mono text-neon-cyan text-xs tracking-widest mb-2 font-bold uppercase">
                                                 Date of Birth (For B-Day Perks)
                                             </label>
                                             <input
                                                 type="date"
                                                 value={dob}
                                                 onChange={(e) => setDob(e.target.value)}
+                                                max={maxDob}
                                                 className="w-full px-4 py-3 bg-black/50 border border-neon-purple rounded text-static-white font-mono text-sm focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan focus:outline-none transition-all [color-scheme:dark]"
                                                 required
                                             />
@@ -297,6 +287,11 @@ export default function MemberPortal({ onClose, onLogin }: MemberPortalProps) {
                                             I GRANT PERMISSION TO RECEIVE TEXTS AND EMAILS REGARDING LAST NIGHT ENTERTAINMENT EVENTS, EXCLUSIVE NEWS, AND OFFERS. MUST BE ACCEPTED TO PROCEED.
                                         </label>
                                     </div>
+                                )}
+                                {step === 'register' && (
+                                    <p className="font-mono text-[10px] text-cold-gray tracking-wider leading-relaxed">
+                                        BLACK CARD APPLICATIONS ARE 18+ ONLY. DATE OF BIRTH IS USED FOR AGE CHECKS AND BIRTHDAY PERKS.
+                                    </p>
                                 )}
 
                                 <button

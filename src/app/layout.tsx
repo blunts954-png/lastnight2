@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { siteConfig } from '@/lib/site'
 
-const siteUrl = 'https://lastnight.com'
+const siteUrl = siteConfig.siteUrl
+const sameAs = siteConfig.contact.instagramUrl ? [siteConfig.contact.instagramUrl] : undefined
 
 const organizationJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'LAST NIGHT ENTERTAINMENT',
+    name: siteConfig.name,
     url: siteUrl,
-    logo: `${siteUrl}/lastnight_luxury_logo.png`,
-    sameAs: ['https://chaoticallyorganizedai.com']
+    logo: `${siteUrl}${siteConfig.logoSrc}`,
+    ...(sameAs ? { sameAs } : {})
 }
 
 const eventJsonLd = {
@@ -57,7 +59,7 @@ const eventJsonLd = {
     ],
     organizer: {
         '@type': 'Organization',
-        name: 'LAST NIGHT ENTERTAINMENT',
+        name: siteConfig.name,
         url: siteUrl
     }
 }
@@ -95,9 +97,9 @@ const faqJsonLd = {
 
 export const metadata: Metadata = {
     metadataBase: new URL(siteUrl),
-    title: 'LAST NIGHT ENTERTAINMENT | Friday the 13th in Bakersfield',
+    title: `${siteConfig.name} | Friday the 13th in Bakersfield`,
     description: 'Friday the 13th nightlife event in Bakersfield, California. $10 preorder, $15 at the door, and $5 Black Card member tickets.',
-    applicationName: 'LAST NIGHT ENTERTAINMENT',
+    applicationName: siteConfig.name,
     category: 'Nightlife Events',
     keywords: [
         'Friday the 13th party Bakersfield',
@@ -107,9 +109,9 @@ export const metadata: Metadata = {
         'LAST NIGHT tickets',
         'California nightlife events'
     ],
-    authors: [{ name: 'LAST NIGHT ENTERTAINMENT' }],
-    creator: 'LAST NIGHT ENTERTAINMENT',
-    publisher: 'LAST NIGHT ENTERTAINMENT',
+    authors: [{ name: siteConfig.name }],
+    creator: siteConfig.name,
+    publisher: siteConfig.name,
     alternates: {
         canonical: '/'
     },
@@ -117,7 +119,7 @@ export const metadata: Metadata = {
         title: 'LAST NIGHT ENTERTAINMENT | Friday the 13th',
         description: 'Bakersfield Friday the 13th party experience with preorder and Black Card member pricing.',
         url: '/',
-        siteName: 'LAST NIGHT ENTERTAINMENT',
+        siteName: siteConfig.name,
         locale: 'en_US',
         type: 'website',
         images: [
@@ -131,13 +133,13 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'LAST NIGHT ENTERTAINMENT | Friday the 13th',
+        title: `${siteConfig.name} | Friday the 13th`,
         description: 'March 13, 2026 in Bakersfield. $10 preorder or $5 with Black Card signup.',
         images: ['/lastnight_hero_bg.png']
     },
     appleWebApp: {
         capable: true,
-        title: 'LAST NIGHT ENTERTAINMENT'
+        title: siteConfig.name
     },
     robots: {
         index: true,
@@ -165,6 +167,8 @@ export const viewport: Viewport = {
     themeColor: '#000000'
 }
 
+import { Providers } from '@/components/Providers'
+
 export default function RootLayout({
     children,
 }: {
@@ -173,19 +177,21 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="bg-pitch-black text-static-white antialiased">
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-                />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
-                />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-                />
-                {children}
+                <Providers>
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+                    />
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+                    />
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                    />
+                    {children}
+                </Providers>
             </body>
         </html>
     )

@@ -1,9 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { siteConfig } from '@/lib/site'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function Footer() {
     const currentYear = new Date().getFullYear()
+    const { language, t } = useLanguage()
 
     return (
         <footer className="section-padding bg-pitch-black border-t border-ethereal-white">
@@ -16,32 +20,45 @@ export default function Footer() {
                     className="flex flex-col md:flex-row justify-between items-center"
                 >
                     {/* Logo */}
-                    <div className="mb-6 md:mb-0">
-                        <span className="font-monument text-2xl tracking-wider text-static-white leading-tight">
-                            LAST NIGHT<br className="md:hidden" /> ENTERTAINMENT
-                        </span>
-                    </div>
+                    <Link href="/" className="mb-6 md:mb-0 flex items-center gap-4 group">
+                        <div className="relative w-16 h-16 md:w-20 md:h-20">
+                            <div className="absolute inset-0 rounded-full bg-neon-cyan/20 blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                            <img
+                                src={siteConfig.logoSrc}
+                                alt={siteConfig.name}
+                                className="relative z-10 w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            />
+                        </div>
+                        <div className="text-left">
+                            <span className="block font-serif italic text-lg md:text-xl tracking-[0.28em] text-static-white">
+                                {siteConfig.shortName}
+                            </span>
+                            <span className="block font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-neon-cyan">
+                                Entertainment
+                            </span>
+                        </div>
+                    </Link>
 
                     {/* Links */}
                     <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8">
-                        <a
-                            href="#"
+                        <Link
+                            href="/privacy-policy"
                             className="font-inter text-cold-gray text-sm uppercase tracking-widest hover:text-static-white transition-colors"
                         >
-                            Privacy
-                        </a>
-                        <a
-                            href="#"
+                            {t.footer.privacy}
+                        </Link>
+                        <Link
+                            href="/terms"
                             className="font-inter text-cold-gray text-sm uppercase tracking-widest hover:text-static-white transition-colors"
                         >
-                            Terms
-                        </a>
-                        <a
-                            href="mailto:contact@lastnight.com"
+                            {t.footer.terms}
+                        </Link>
+                        <Link
+                            href="/contact"
                             className="font-inter text-cold-gray text-sm uppercase tracking-widest hover:text-static-white transition-colors"
                         >
-                            Contact
-                        </a>
+                            {t.footer.contact}
+                        </Link>
                     </div>
                 </motion.div>
 
@@ -62,13 +79,20 @@ export default function Footer() {
                     viewport={{ once: true }}
                     className="text-center font-inter text-cold-gray text-xs"
                 >
-                    © {currentYear} LAST NIGHT ENTERTAINMENT. All rights reserved.
+                    © {currentYear} {siteConfig.name}. {t.footer.rights}
                     <br />
-                    <span className="text-electric-indigo">NOT FOR EVERYONE</span>
-                    <br />
-                    <span className="text-neon-cyan/50 mt-4 inline-block tracking-widest text-[10px]">
-                        Designed by ChaoticallyOrganizedAI.com
+                    <span className="text-electric-indigo">
+                        {language === 'en' ? siteConfig.ageGateLabel : 'MAYORES DE 18 ÚNICAMENTE.'}
                     </span>
+                    <br />
+                    <a
+                        href={siteConfig.designCredit.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-neon-cyan/50 mt-4 inline-block tracking-widest text-[10px] hover:text-neon-cyan transition-colors"
+                    >
+                        {t.footer.designedBy} {siteConfig.designCredit.label}
+                    </a>
                 </motion.p>
             </div>
         </footer>

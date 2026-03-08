@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useLanguage } from '@/lib/LanguageContext'
 
 interface NavigationProps {
     onBlacklistClick: () => void
@@ -11,6 +12,7 @@ interface NavigationProps {
 export default function Navigation({ onBlacklistClick, isAuthenticated }: NavigationProps) {
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const { language, setLanguage, t } = useLanguage()
 
     useEffect(() => {
         const handleScroll = () => {
@@ -37,7 +39,7 @@ export default function Navigation({ onBlacklistClick, isAuthenticated }: Naviga
                                 className="absolute inset-0 rounded-full bg-neon-cyan/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                             />
                             <img
-                                src="/lastnight_luxury_logo.png"
+                                src="/logo.png"
                                 alt="LAST NIGHT ENTERTAINMENT"
                                 className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-110"
                             />
@@ -53,27 +55,40 @@ export default function Navigation({ onBlacklistClick, isAuthenticated }: Naviga
                             href="#friday-13th"
                             className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-cold-gray hover:text-neon-cyan transition-colors font-bold"
                         >
-                            FRIDAY 13TH
+                            {t.nav.event}
                         </a>
                         <a
                             href="#tickets"
                             className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-cold-gray hover:text-neon-cyan transition-colors font-bold"
                         >
-                            TICKETS
+                            {t.nav.tickets}
                         </a>
                         <button
                             onClick={onBlacklistClick}
                             className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-neon-purple hover:text-neon-cyan transition-colors font-bold flex items-center gap-2"
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-neon-purple box-glow-purple"></span>
-                            {isAuthenticated ? 'MY CARD' : 'BLACK CARD'}
+                            {isAuthenticated ? t.nav.myCard : t.nav.blacklist}
                         </button>
                         <a
                             href="#past-events"
                             className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-cold-gray hover:text-neon-cyan transition-colors font-bold"
                         >
-                            PAST EVENTS
+                            {t.nav.pastEvents}
                         </a>
+
+                        {/* Language Toggle */}
+                        <button
+                            onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                            className="flex items-center gap-2 border border-ethereal-white px-3 py-1 bg-white/5 hover:bg-white/10 transition-all group"
+                        >
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-static-white group-hover:text-neon-cyan transition-colors">
+                                {language === 'en' ? 'ESP' : 'ENG'}
+                            </span>
+                            <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[10px]">🌐</span>
+                            </div>
+                        </button>
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -120,14 +135,14 @@ export default function Navigation({ onBlacklistClick, isAuthenticated }: Naviga
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="font-mono text-sm uppercase tracking-[0.3em] text-cold-gray hover:text-neon-cyan transition-colors"
                             >
-                                FRIDAY 13TH
+                                {t.nav.event}
                             </a>
                             <a
                                 href="#tickets"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="font-mono text-sm uppercase tracking-[0.3em] text-cold-gray hover:text-neon-cyan transition-colors"
                             >
-                                TICKETS
+                                {t.nav.tickets}
                             </a>
                             <button
                                 onClick={() => {
@@ -137,15 +152,21 @@ export default function Navigation({ onBlacklistClick, isAuthenticated }: Naviga
                                 className="font-mono text-sm uppercase tracking-[0.3em] text-neon-purple hover:text-neon-cyan transition-colors flex items-center gap-2"
                             >
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-purple box-glow-purple"></span>
-                                {isAuthenticated ? 'MY CARD' : 'BLACK CARD'}
+                                {isAuthenticated ? t.nav.myCard : t.nav.blacklist}
                             </button>
                             <a
                                 href="#past-events"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="font-mono text-sm uppercase tracking-[0.3em] text-cold-gray hover:text-neon-cyan transition-colors"
                             >
-                                PAST EVENTS
+                                {t.nav.pastEvents}
                             </a>
+                            <button
+                                onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+                                className="font-mono text-sm uppercase tracking-[0.3em] text-neon-cyan"
+                            >
+                                {language === 'en' ? 'ESPAÑOL' : 'ENGLISH'}
+                            </button>
                         </div>
                     </motion.div>
                 )}
