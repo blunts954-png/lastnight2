@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
-import { Client, Environment } from 'square'
+import { SquareClient, SquareEnvironment } from 'square'
 
 // Initialize the Square client
-const client = new Client({
-    accessToken: process.env.SQUARE_ACCESS_TOKEN,
-    environment: Environment.Sandbox, // Change to Environment.Production for real payments
+const client = new SquareClient({
+    token: process.env.SQUARE_ACCESS_TOKEN || '',
+    environment: SquareEnvironment.Sandbox, // Change to SquareEnvironment.Production for real payments
 })
 
 export async function POST(request: Request) {
     try {
         const { sourceId, amount, idempotencyKey } = await request.json()
 
-        const { result } = await client.paymentsApi.createPayment({
+        const response = await client.payments.create({
             sourceId,
             idempotencyKey,
             amountMoney: {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
         // Convert BigInt to Number for JSON serialization
         const serializedResult = JSON.parse(
-            JSON.stringify(result, (key, value) =>
+            JSON.stringify(response, (key, value) =>
                 typeof value === 'bigint' ? value.toString() : value
             )
         )
