@@ -71,6 +71,18 @@ export interface Scan {
     result: 'success' | 'failed' | 'banned'
 }
 
+export interface Ticket {
+    ticket_id: string
+    transaction_id: string
+    member_id?: string
+    email: string
+    amount: number
+    status: 'paid' | 'pending' | 'failed'
+    ticket_type: string
+    created_at: string
+    qr_token: string
+}
+
 // Helper functions
 export const generateMemberId = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -167,6 +179,66 @@ export const recordScan = async (scanData: Scan): Promise<void> => {
     const { doc, setDoc } = firestore
 
     await setDoc(doc(db, 'scans', scanData.scan_id), scanData)
+}
+
+export const createTicket = async (ticketData: Omit<Ticket, 'ticket_id'>): Promise<Ticket> => {
+    const fb = await getFirebase()
+    if (!fb) throw new Error('Firebase not initialized')
+
+    const { db, firestore } = fb
+    const { collection, doc, setDoc } = firestore
+
+    const ticket_id = `TKT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+    const newTicket: Ticket = {
+        ...ticketData,
+        ticket_id
+    }
+
+    await setDoc(doc(db, 'tickets', ticket_id), newTicket)
+    return newTicket
+}
+
+export const getTicketByToken = async (qrToken: string): Promise<Ticket | null> => {
+    const fb = await getFirebase()
+    if (!fb) return null
+
+    const { db, firestore } = fb
+    const { collection, query, where, getDocs } = firestore
+
+    const q = query(collection(db, 'tickets'), where('qr_token', '==', qrToken))
+    const querySnapshot = await getDocs(q)
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].data() as Ticket
+    }
+    return null
+}
+
+export const validateScan = async (type: 'member' | 'ticket', identifier: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    const fb = await getFirebase()
+    if (!fb) return { success: false, error: 'GRID OFFLINE' }
+
+    try {
+        if (type === 'member') {
+            // Check by ID or Phone
+            let member = await getMember(identifier)
+            if (!member) member = await getMemberByPhone(identifier.replace(/\D/g, ''))
+
+            if (member) {
+                if (member.banned) return { success: false, error: 'BANNED', data: member }
+                return { success: true, data: member }
+            }
+        } else {
+            // Check Ticket by Token
+            const ticket = await getTicketByToken(identifier)
+            if (ticket) {
+                if (ticket.status === 'paid') return { success: true, data: ticket }
+                return { success: false, error: 'CANCELLED/UNPAID', data: ticket }
+            }
+        }
+    } catch (err) {
+        console.error('Validation Error:', err)
+    }
+    return { success: false, error: 'NOT FOUND' }
 }
 
 export const logout = async (): Promise<void> => {

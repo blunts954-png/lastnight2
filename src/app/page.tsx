@@ -22,6 +22,8 @@ import ArchitectChatbot from '@/components/ArchitectChatbot'
 import SplashPage from '@/components/SplashPage'
 import SiteOverlay from '@/components/SiteOverlay'
 import CustomCursor from '@/components/CustomCursor'
+import AEOAgentNode from '@/components/AEOAgentNode'
+import SystemStatusBar from '@/components/SystemStatusBar'
 
 export default function Home() {
     const [showPortal, setShowPortal] = useState(false)
@@ -54,10 +56,27 @@ export default function Home() {
         setShowPayment(true)
     }
 
-    const handlePaymentSuccess = (details: any) => {
+    const handlePaymentSuccess = async (details: any) => {
         setShowPayment(false)
-        alert('PAYMENT SUCCESSFUL. YOUR ACCESS IS GRANTED.')
-        // In a real app, you'd probably redirect or update user state here
+        try {
+            const { createTicket, generateQrToken } = await import('@/lib/firebase')
+
+            // Record the ticket in Firestore
+            await createTicket({
+                transaction_id: details.payment.id,
+                email: 'user@example.com', // In real app, get from input
+                amount: paymentData.amount,
+                status: 'paid',
+                ticket_type: paymentData.ticketName,
+                created_at: new Date().toISOString(),
+                qr_token: generateQrToken(`TKT-${details.payment.id}`)
+            })
+
+            alert('PAYMENT SUCCESSFUL. YOUR ACCESS IS GRANTED AND YOUR TICKET IS RECORDED IN THE ARCHIVE.')
+        } catch (error) {
+            console.error('Ticketing Persistence Error:', error)
+            alert('PAYMENT TRACKING FAILED. PLEASE CONTACT JJ DIRECTLY WITH YOUR TRANSACTION ID.')
+        }
     }
 
     return (
@@ -99,6 +118,9 @@ export default function Home() {
                     <Footer />
                 </div>
 
+                {/* AI Agent Node for AEO (Invisible to humans, readable by LLMs) */}
+                <AEOAgentNode />
+
                 {/* Chatbot Interface */}
                 <ArchitectChatbot />
 
@@ -120,6 +142,9 @@ export default function Home() {
                         onSuccess={handlePaymentSuccess}
                     />
                 )}
+
+                {/* Advanced Info Bar (God Mode) */}
+                {!showSplash && <SystemStatusBar />}
             </main>
         </>
     )

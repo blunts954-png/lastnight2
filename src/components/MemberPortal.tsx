@@ -9,6 +9,7 @@ import {
     generateMemberId,
     generateQrToken,
 } from '@/lib/firebase'
+import html2canvas from 'html2canvas'
 
 interface MemberPortalProps {
     onClose: () => void
@@ -133,6 +134,15 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
                     setStep('register')
                 }
             } else {
+                // Check if already registered
+                const checkMember = await getMemberByPhone(normalizedPhone)
+                if (checkMember) {
+                    alert('PHONE NUMBER ALREADY REGISTERED. REDIRECTING TO LOGIN.')
+                    setStep('login')
+                    setLoading(false)
+                    return
+                }
+
                 // Register new member in Firebase
                 const memberId = isJJ ? 'LN-GOD-001' : generateMemberId()
                 const newFirebaseMember: any = {
@@ -170,6 +180,40 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
         } catch (error) {
             console.error('Portal Error:', error)
             alert('SYSTEM ERROR: UNABLE TO SYNC WITH THE GRID.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const exportCard = async () => {
+        if (!cardRef.current) return
+        setLoading(true)
+        setLoadingText('MINTING PHYSICAL PERSISTENCE...')
+
+        try {
+            // Reset rotation for clean capture
+            setRotateX(0)
+            setRotateY(0)
+
+            // Wait for rotation transition
+            await new Promise(resolve => setTimeout(resolve, 150))
+
+            const canvas = await html2canvas(cardRef.current, {
+                backgroundColor: null,
+                scale: 3, // High quality
+                logging: false,
+                useCORS: true
+            })
+
+            const link = document.createElement('a')
+            link.download = `LASTNIGHT-${member?.member_id}.png`
+            link.href = canvas.toDataURL('image/png')
+            link.click()
+
+            alert('CARD EXPORTED TO YOUR ARCHIVE. YOU CAN NOW SAVE THIS TO YOUR PHONE WALLET OR PHOTOS.')
+        } catch (err) {
+            console.error('Export Error:', err)
+            alert('EXPORT FAILED. PLEASE TAKE A SCREENSHOT OF YOUR CARD.')
         } finally {
             setLoading(false)
         }
@@ -445,13 +489,19 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
 
                             {/* Actions / Buttons */}
                             <div className="grid grid-cols-2 gap-4">
-                                <button className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-black/50 border border-neon-purple/50 box-glow-purple rounded hover:border-neon-cyan hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all">
+                                <button
+                                    onClick={exportCard}
+                                    className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-black/50 border border-neon-purple/50 box-glow-purple rounded hover:border-neon-cyan hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all"
+                                >
                                     <svg className="w-6 h-6 text-static-white" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                                     </svg>
                                     <span className="font-mono text-[10px] uppercase text-static-white tracking-widest">Apple Wallet</span>
                                 </button>
-                                <button className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-black/50 border border-neon-purple/50 box-glow-purple rounded hover:border-neon-cyan hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all">
+                                <button
+                                    onClick={exportCard}
+                                    className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-black/50 border border-neon-purple/50 box-glow-purple rounded hover:border-neon-cyan hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all"
+                                >
                                     <svg className="w-6 h-6 text-static-white" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M3.61 16.19l1.47-1.3c.25-.22.62-.26.89-.09.27.17.38.51.26.8l-.79 1.91c-.13.31-.45.51-.8.51h-.15c-.53-.03-.98-.34-1.14-.82l-.65-1.84c-.17-.48-.01-.99.35-1.28l1.56-.88zm6.75-5.54l-2.93 4.44-2.89-4.44a.49.49 0 00-.53-.18.51.51 0 00-.31.45l-.33 3.6c-.07.71.44 1.37 1.15 1.49l3.26.55c.71.12 1.38-.36 1.5-1.08l.33-3.6a.51.51 0 00-.51-.62.5.5 0 00-.34.15l-2.39 2.53 2.5 3.8c.19.29.58.4.91.26.33-.14.48-.52.35-.86l-1.17-3.01 1.44-1.51c.2-.21.26-.52.15-.8-.11-.28-.39-.45-.7-.45h-3.19l-.28-2.76c-.04-.35-.33-.62-.68-.65h-.13c-.4.03-.72.35-.72.76l.21 2.66zm6.42.03l-1.71 1.5c-.21.18-.52.15-.69-.07-.17-.22-.14-.53.07-.7l1.71-1.5-1.27-1.67c-.17-.23-.14-.54.08-.71.22-.17.53-.14.7.08l1.27 1.67 1.29-1.67c.17-.23.48-.26.7-.08.22.17.26.48.08.71l-1.29 1.67 1.71 1.5c.21.18.26.49.07.7-.17.21-.48.26-.7.07l-1.71-1.5z" />
                                     </svg>

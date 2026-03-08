@@ -10,6 +10,8 @@ type Star = {
     twinkle: number
     color: string
     speed: number
+    baseX: number
+    baseY: number
 }
 
 type ShootingStar = {
@@ -42,6 +44,7 @@ const STAR_COLORS = ['#ffffff', '#00f0ff', '#b026ff', '#ff3333']
 
 export default function Starfield() {
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const mouseRef = useRef({ x: -1000, y: -1000 })
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -78,15 +81,21 @@ export default function Starfield() {
         const createStars = () => {
             const density = isMobile ? 0.00018 : 0.00025
             const count = Math.max(160, Math.floor(width * height * density))
-            stars = Array.from({ length: count }, () => ({
-                x: random(0, width),
-                y: random(0, height),
-                size: random(0.5, isMobile ? 1.8 : 2.2),
-                alpha: random(0.25, 1),
-                twinkle: random(0.01, 0.04),
-                color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
-                speed: random(0.02, 0.2)
-            }))
+            stars = Array.from({ length: count }, () => {
+                const x = random(0, width)
+                const y = random(0, height)
+                return {
+                    x,
+                    y,
+                    baseX: x,
+                    baseY: y,
+                    size: random(0.5, isMobile ? 1.8 : 2.2),
+                    alpha: random(0.25, 1),
+                    twinkle: random(0.01, 0.04),
+                    color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+                    speed: random(0.02, 0.2)
+                }
+            })
         }
 
         const createNebulas = () => {
@@ -153,18 +162,42 @@ export default function Starfield() {
         }
 
         const drawStars = () => {
+            const mouseX = mouseRef.current.x
+            const mouseY = mouseRef.current.y
+
             for (const star of stars) {
+                // Background movement
                 star.y -= star.speed
                 if (star.y < -2) {
                     star.y = height + 2
                     star.x = random(0, width)
+                    star.baseX = star.x
+                }
+
+                // Interactive Antigravity Logic
+                let targetX = star.x
+                let targetY = star.y
+
+                const dx = mouseX - star.x
+                const dy = mouseY - star.y
+                const distance = Math.sqrt(dx * dx + dy * dy)
+                const forceRange = 150
+
+                if (distance < forceRange) {
+                    const force = (forceRange - distance) / forceRange
+                    const angle = Math.atan2(dy, dx)
+                    const pushX = Math.cos(angle) * force * 50
+                    const pushY = Math.sin(angle) * force * 50
+
+                    targetX -= pushX
+                    targetY -= pushY
                 }
 
                 const twinkleAlpha = Math.max(0.1, Math.min(1, star.alpha + Math.sin(performance.now() * star.twinkle) * 0.25))
                 ctx.globalAlpha = twinkleAlpha
                 ctx.fillStyle = star.color
                 ctx.beginPath()
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2)
+                ctx.arc(targetX, targetY, star.size, 0, Math.PI * 2)
                 ctx.fill()
             }
             ctx.globalAlpha = 1
@@ -230,10 +263,16 @@ export default function Starfield() {
             initScene()
         }
 
+        const handleMouseMove = (e: MouseEvent) => {
+            mouseRef.current = { x: e.clientX, y: e.clientY }
+        }
+
         window.addEventListener('resize', handleResize)
+        window.addEventListener('mousemove', handleMouseMove)
 
         return () => {
             window.removeEventListener('resize', handleResize)
+            window.removeEventListener('mousemove', handleMouseMove)
             window.cancelAnimationFrame(animationFrameId)
         }
     }, [])

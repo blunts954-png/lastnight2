@@ -3,150 +3,153 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Starfield from '@/components/Starfield'
+import { validateScan, recordScan } from '@/lib/firebase'
+import { Html5Qrcode } from 'html5-qrcode'
 
-type ScanResult = 'idle' | 'success' | 'error' | 'banned' | 'not-found'
+type ScanResultState = {
+    status: 'idle' | 'scanning' | 'success' | 'warning' | 'error' | 'banned'
+    data?: any
+    message?: string
+}
 
 export default function ScannerPage() {
     const [password, setPassword] = useState('')
     const [isAuthenticated, setIsAuthenticated] = useState(false)
-    const [scanResult, setScanResult] = useState<ScanResult>('idle')
-    const [memberName, setMemberName] = useState('')
-    const [memberTier, setMemberTier] = useState('')
-    const [lastScan, setLastScan] = useState('')
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const [scanState, setScanState] = useState<ScanResultState>({ status: 'idle' })
+    const [manualInput, setManualInput] = useState('')
+    const [lastScanTime, setLastScanTime] = useState('')
+    const [scannerActive, setScannerActive] = useState(false)
+
+    const qrRegionRef = useRef<HTMLDivElement>(null)
+    const scanInstance = useRef<Html5Qrcode | null>(null)
 
     // Handle password submission
     const handlePasswordSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // In production, verify against a secure endpoint
         if (password === 'LASTNIGHT2026') {
             setIsAuthenticated(true)
-            startCamera()
         } else {
             alert('Invalid password')
         }
     }
 
-    // Start camera for QR scanning
-    const startCamera = async () => {
+    const startScanner = async () => {
+        setScannerActive(true)
+        setScanState({ status: 'scanning' })
+
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
-            })
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream
+            if (!scanInstance.current) {
+                scanInstance.current = new Html5Qrcode("reader")
             }
+
+            await scanInstance.current.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                },
+                onScanSuccess,
+                onScanError
+            )
         } catch (err) {
-            console.error('Error accessing camera:', err)
+            console.error("Scanner Error:", err)
+            alert("CAMERA ACCESS FAILED. TRY RELOADING.")
         }
     }
 
-    // Simulate QR code scan (in production, use a proper QR library)
-    const simulateScan = () => {
-        const memberIds = [
-            { id: 'LN-A8K3M2', name: 'ALEX', tier: 'Blacklist' },
-            { id: 'LN-B2N9P5', name: 'JORDAN', tier: 'Inner Circle' },
-            { id: 'LN-C4Q1R8', name: 'TAYLOR', tier: 'Founder' },
-        ]
+    const onScanSuccess = async (decodedText: string) => {
+        if (scanInstance.current) {
+            try {
+                await scanInstance.current.stop()
+                setScannerActive(false)
+            } catch (e) { }
+        }
+        processValidation(decodedText)
+    }
 
-        // Randomly select a member or simulate not found
-        const random = Math.random()
-        if (random < 0.7) {
-            const member = memberIds[Math.floor(Math.random() * memberIds.length)]
-            setMemberName(member.name)
-            setMemberTier(member.tier)
-            setScanResult('success')
-        } else if (random < 0.85) {
-            setScanResult('not-found')
-            setMemberName('')
-            setMemberTier('')
+    const onScanError = (errorMessage: string) => {
+        // Just let it keep scanning
+    }
+
+    const processValidation = async (identifier: string) => {
+        setScanState({ status: 'scanning', message: 'CONSULTING THE ARCHIVE...' })
+
+        // Determine if it's a ticket token or a member ID/phone
+        const type = identifier.startsWith('LN-GOD-') || identifier.startsWith('LN-') ? 'member' : 'ticket'
+
+        const result = await validateScan(type, identifier)
+        setLastScanTime(new Date().toLocaleTimeString())
+
+        if (result.success) {
+            setScanState({
+                status: 'success',
+                data: result.data,
+                message: result.data.name || result.data.ticket_type
+            })
+            // Log the scan for analytics/entry count
+            recordScan({
+                scan_id: `SCAN-${Date.now()}`,
+                member_id: result.data.member_id || 'GUEST',
+                event_id: 'FRIDAY-13TH-2026',
+                timestamp: new Date().toISOString(),
+                location: 'MAIN DOOR',
+                result: 'success'
+            })
         } else {
-            setMemberName('BANNED USER')
-            setMemberTier('BANNED')
-            setScanResult('banned')
+            setScanState({
+                status: result.error === 'BANNED' ? 'banned' : 'error',
+                message: result.error || 'NOT FOUND',
+                data: result.data
+            })
         }
-
-        setLastScan(new Date().toLocaleTimeString())
     }
 
-    // Reset scanner
+    const handleManualSearch = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (manualInput.trim()) {
+            processValidation(manualInput.trim())
+        }
+    }
+
     const resetScanner = () => {
-        setScanResult('idle')
-        setMemberName('')
-        setMemberTier('')
+        setScanState({ status: 'idle' })
+        setManualInput('')
     }
 
-    // Get result display properties
-    const getResultDisplay = () => {
-        switch (scanResult) {
-            case 'success':
-                return {
-                    color: 'text-matrix-green',
-                    bgColor: 'bg-matrix-green/20',
-                    borderColor: 'border-matrix-green',
-                    icon: '✓',
-                    message: memberName
-                }
-            case 'error':
-                return {
-                    color: 'text-alert-red',
-                    bgColor: 'bg-alert-red/20',
-                    borderColor: 'border-alert-red',
-                    icon: '✗',
-                    message: 'INVALID'
-                }
-            case 'banned':
-                return {
-                    color: 'text-alert-red',
-                    bgColor: 'bg-alert-red/20',
-                    borderColor: 'border-alert-red',
-                    icon: '✗',
-                    message: 'GET LOST'
-                }
-            case 'not-found':
-                return {
-                    color: 'text-yellow-400',
-                    bgColor: 'bg-yellow-400/20',
-                    borderColor: 'border-yellow-400',
-                    icon: '?',
-                    message: 'NOT ON LIST'
-                }
-            default:
-                return null
+    // Colors based on result
+    const getTheme = () => {
+        const themes = {
+            success: { text: 'text-matrix-green', bg: 'bg-matrix-green/10', border: 'border-matrix-green', icon: '✓', label: 'ACCESS GRANTED' },
+            error: { text: 'text-alert-red', bg: 'bg-alert-red/10', border: 'border-alert-red', icon: '✗', label: 'DENIED' },
+            banned: { text: 'text-alert-red', bg: 'bg-alert-red/20', border: 'border-alert-red animate-pulse', icon: '!!!', label: 'BANNED' },
+            warning: { text: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400', icon: '?', label: 'CHECK ID' },
+            idle: { text: 'text-neon-cyan', bg: 'bg-black/50', border: 'border-neon-cyan', icon: '', label: '' },
+            scanning: { text: 'text-neon-purple', bg: 'bg-neon-purple/5', border: 'border-neon-purple', icon: '', label: 'ANALYZING' }
         }
+        return themes[scanState.status as keyof typeof themes] || themes.idle
     }
 
-    // Password entry screen
+    const theme = getTheme()
+
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-pitch-black relative flex items-center justify-center">
                 <Starfield />
                 <div className="relative z-10 w-full max-w-md p-8">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-card p-8"
-                    >
-                        <h1 className="font-monument text-2xl text-center mb-2 text-static-white">
-                            DOOR STAFF ACCESS
-                        </h1>
-                        <p className="font-inter text-cold-gray text-center text-sm mb-6">
-                            Enter password to access scanner
-                        </p>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card border-neon-purple/30 box-glow-purple p-8">
+                        <h1 className="font-mono text-2xl text-center mb-2 text-static-white tracking-widest font-bold">DOOR ACCESS</h1>
+                        <p className="font-mono text-cold-gray text-center text-[10px] mb-8 tracking-widest uppercase">STRICT SECURE LINK ONLY</p>
                         <form onSubmit={handlePasswordSubmit}>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-pitch-black border border-ethereal-white rounded-lg text-static-white font-inter focus:border-electric-indigo focus:outline-none text-center text-2xl tracking-widest"
-                                placeholder="••••••••"
+                                className="w-full px-4 py-4 bg-black border border-neon-purple rounded text-static-white font-mono focus:border-neon-cyan focus:outline-none text-center text-3xl tracking-[0.5em]"
+                                placeholder="••••"
+                                autoFocus
                             />
-                            <button
-                                type="submit"
-                                className="w-full btn-primary mt-6"
-                            >
-                                Enter
+                            <button type="submit" className="w-full btn-primary mt-8 py-4 font-mono text-sm tracking-[0.2em] uppercase font-bold">
+                                AUTHENTICATE
                             </button>
                         </form>
                     </motion.div>
@@ -156,116 +159,108 @@ export default function ScannerPage() {
     }
 
     return (
-        <div className="min-h-screen bg-pitch-black relative">
+        <div className="min-h-screen bg-pitch-black relative text-static-white font-mono overflow-x-hidden">
             <Starfield />
 
-            {/* Header */}
-            <div className="relative z-10 flex justify-between items-center p-4">
-                <h1 className="font-monument text-xl text-static-white">SCANNER</h1>
-                <button
-                    onClick={() => setIsAuthenticated(false)}
-                    className="font-inter text-cold-gray text-sm hover:text-static-white"
-                >
+            <div className="relative z-10 p-6 flex justify-between items-center border-b border-white/10 backdrop-blur-md sticky top-0">
+                <div>
+                    <span className="text-neon-purple text-[10px] tracking-widest block font-bold">BOUNCER NODE</span>
+                    <span className="text-static-white text-sm tracking-widest uppercase font-bold">LAST NIGHT DOOR</span>
+                </div>
+                <button onClick={() => window.location.reload()} className="text-cold-gray text-[10px] tracking-widest border border-white/20 px-3 py-1 rounded-sm hover:text-neon-cyan transition-colors uppercase">
                     Logout
                 </button>
             </div>
 
-            {/* Main Scanner Area */}
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-4">
+            <div className="relative z-10 max-w-lg mx-auto p-4 flex flex-col items-center justify-center min-h-[calc(100vh-100px)]">
                 <AnimatePresence mode="wait">
-                    {scanResult === 'idle' ? (
-                        <motion.div
-                            key="scanner"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="w-full max-w-md"
-                        >
-                            {/* Camera View */}
-                            <div className="relative aspect-square bg-pitch-black rounded-2xl overflow-hidden border-2 border-ethereal-white mb-6">
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="w-full h-full object-cover"
-                                />
-                                <canvas ref={canvasRef} className="hidden" />
-
-                                {/* Scanning Overlay */}
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-64 h-64 border-2 border-electric-indigo rounded-lg animate-pulse" />
-                                </div>
-
-                                {/* Corner Markers */}
-                                <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-electric-indigo" />
-                                <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-electric-indigo" />
-                                <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-electric-indigo" />
-                                <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-electric-indigo" />
+                    {scanState.status === 'idle' || scanState.status === 'scanning' ? (
+                        <motion.div key="scanner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+                            {/* Camera Area */}
+                            <div className="relative aspect-square w-full max-w-[350px] mx-auto bg-black rounded-lg border-2 border-neon-purple/50 overflow-hidden mb-8 shadow-[0_0_30px_rgba(176,38,255,0.2)]">
+                                {scanState.status === 'idle' ? (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+                                        <button onClick={startScanner} className="btn-primary px-8 py-4 font-bold tracking-widest text-sm uppercase">Activate Lens</button>
+                                    </div>
+                                ) : (
+                                    <div id="reader" className="w-full h-full"></div>
+                                )}
+                                <div className="absolute inset-0 pointer-events-none border-[40px] border-black/40 z-10"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-neon-cyan/50 rounded z-10 animate-pulse"></div>
+                                <div className="absolute top-0 left-0 w-full h-0.5 bg-neon-cyan/50 shadow-[0_0_15px_rgba(0,240,255,1)] z-10 animate-scan"></div>
                             </div>
 
-                            {/* Scan Button */}
-                            <button
-                                onClick={simulateScan}
-                                className="w-full btn-primary neon-glow text-lg"
-                            >
-                                SCAN QR CODE
-                            </button>
-
-                            {/* Manual Entry */}
-                            <p className="text-center font-inter text-cold-gray text-xs mt-4">
-                                Point camera at member's QR code
-                            </p>
+                            {/* Manual Entry Fallback */}
+                            <div className="w-full space-y-6">
+                                <form onSubmit={handleManualSearch} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={manualInput}
+                                        onChange={(e) => setManualInput(e.target.value.toUpperCase())}
+                                        placeholder="MEMBER ID OR PHONE"
+                                        className="flex-grow bg-black/50 border border-white/20 px-4 py-3 rounded text-sm focus:border-neon-cyan focus:outline-none tracking-widest font-mono"
+                                    />
+                                    <button type="submit" className="border border-neon-cyan text-neon-cyan px-4 py-3 rounded text-xs font-bold hover:bg-neon-cyan/10 transition-colors uppercase">Check</button>
+                                </form>
+                                <p className="text-center text-[10px] text-cold-gray tracking-[0.2em] font-bold uppercase">TIP: SEARCH BY PHONE IF QR WON'T SCAN</p>
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div
                             key="result"
-                            initial={{ scale: 0.8, opacity: 0 }}
+                            initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.8, opacity: 0 }}
-                            className={`w-full max-w-md p-8 rounded-2xl border-2 ${getResultDisplay()?.bgColor} ${getResultDisplay()?.borderColor}`}
+                            className={`w-full p-8 rounded border-4 ${theme.bg} ${theme.border} text-center flex flex-col items-center justify-center min-h-[400px] shadow-2xl relative overflow-hidden`}
                         >
-                            {/* Result Icon */}
-                            <div className="text-center mb-6">
-                                <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${getResultDisplay()?.bgColor} border-4 ${getResultDisplay()?.borderColor}`}>
-                                    <span className={`font-monument text-5xl ${getResultDisplay()?.color}`}>
-                                        {getResultDisplay()?.icon}
-                                    </span>
-                                </div>
+                            {/* Scanning result decorations */}
+                            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-${theme.text.split('-')[1]}-${theme.text.split('-')[2]} to-transparent`}></div>
+
+                            <div className={`flex items-center justify-center w-24 h-24 rounded-full border-2 ${theme.border} mb-6`}>
+                                <span className={`text-5xl font-bold ${theme.text}`}>{theme.icon}</span>
                             </div>
 
-                            {/* Result Message */}
-                            <h2 className={`font-monument text-4xl text-center mb-2 ${getResultDisplay()?.color}`}>
-                                {getResultDisplay()?.message}
+                            <p className={`text-xs tracking-[0.3em] font-bold mb-2 uppercase ${theme.text}`}>{theme.label}</p>
+                            <h2 className="text-3xl font-bold mb-6 tracking-wider uppercase text-static-white break-words w-full">
+                                {scanState.message}
                             </h2>
 
-                            {/* Member Details */}
-                            {memberName && (
-                                <div className="text-center mb-6">
-                                    <p className="font-inter text-cold-gray text-sm uppercase tracking-widest mb-1">
-                                        Member ID
-                                    </p>
-                                    <p className="font-monument text-2xl text-static-white">
-                                        {memberTier}
-                                    </p>
+                            {scanState.data && (
+                                <div className="w-full bg-black/20 p-4 rounded-sm border border-white/10 mb-8 space-y-2">
+                                    <div className="flex justify-between text-[10px] uppercase font-bold text-cold-gray">
+                                        <span>TIER</span>
+                                        <span className="text-static-white">{scanState.data.tier || scanState.data.ticket_type || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] uppercase font-bold text-cold-gray">
+                                        <span>POINTS</span>
+                                        <span className="text-static-white font-mono">{scanState.data.points || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] uppercase font-bold text-cold-gray">
+                                        <span>EVENTS</span>
+                                        <span className="text-static-white">{scanState.data.attendance_count || 0}</span>
+                                    </div>
                                 </div>
                             )}
 
-                            {/* Timestamp */}
-                            <p className="text-center font-inter text-cold-gray text-xs">
-                                Scanned at {lastScan}
-                            </p>
+                            <div className="text-[10px] text-cold-gray tracking-widest mb-8 font-bold uppercase">
+                                ARCHIVE TIME: {lastScanTime}
+                            </div>
 
-                            {/* Reset Button */}
-                            <button
-                                onClick={resetScanner}
-                                className="w-full btn-secondary mt-6"
-                            >
-                                Scan Next
-                            </button>
+                            <button onClick={resetScanner} className="w-full btn-primary py-4 font-bold tracking-widest uppercase">Next Subject</button>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
+
+            <style jsx global>{`
+                @keyframes scan {
+                    0% { top: 0; }
+                    100% { top: 100%; }
+                }
+                .animate-scan {
+                    animation: scan 2s linear infinite;
+                }
+            `}</style>
         </div>
     )
 }
