@@ -31,9 +31,11 @@ export const getFirebase = async () => {
 
     console.log("Firebase: Initializing app with config:", { ...firebaseConfig, apiKey: '***' })
     const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
-    const db = getFirestore(app)
+
+    // The user's database is named "lastnightblackcard" instead of "(default)"
+    const db = getFirestore(app, "lastnightblackcard")
     const auth = getAuth(app)
-    console.log("Firebase: Connected successfully.")
+    console.log("Firebase: Connected successfully to grid: lastnightblackcard")
 
     firebaseInstance = {
         app,

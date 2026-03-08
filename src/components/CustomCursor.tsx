@@ -5,7 +5,8 @@ import { motion, useSpring, useMotionValue } from 'framer-motion'
 
 export default function CustomCursor() {
     const [isPressed, setIsPressed] = useState(false)
-    const [isVisible, setIsVisible] = useState(false)
+    const [isVisible, setIsVisible] = useState(true)
+    const [hasMoved, setHasMoved] = useState(false)
     const cursorX = useMotionValue(-100)
     const cursorY = useMotionValue(-100)
 
@@ -15,6 +16,7 @@ export default function CustomCursor() {
 
     useEffect(() => {
         const moveCursor = (e: MouseEvent) => {
+            if (!hasMoved) setHasMoved(true)
             cursorX.set(e.clientX)
             cursorY.set(e.clientY)
         }
@@ -37,11 +39,11 @@ export default function CustomCursor() {
             document.removeEventListener('mouseenter', handleMouseEnter)
             document.removeEventListener('mouseleave', handleMouseLeave)
         }
-    }, [cursorX, cursorY])
+    }, [cursorX, cursorY, hasMoved])
 
     return (
         <div className="fixed inset-0 z-[10001] pointer-events-none hidden lg:block">
-            {/* Center Dot - High Sharpness / Instant tracking */}
+            {/* Center Dot - Zero Latency */}
             <motion.div
                 className="w-1.5 h-1.5 bg-neon-cyan shadow-[0_0_12px_#00f0ff] rounded-full fixed top-0 left-0"
                 style={{
@@ -49,26 +51,26 @@ export default function CustomCursor() {
                     y: cursorY,
                     translateX: '-50%',
                     translateY: '-50%',
-                    scale: isPressed ? 0.8 : 1,
-                    opacity: isVisible ? 1 : 0
+                    scale: isPressed ? 0.7 : 1,
+                    opacity: isVisible && hasMoved ? 1 : 0
                 }}
             />
 
-            {/* Tactical Target Ring - Smooth flow */}
+            {/* Tactical Target Ring */}
             <motion.div
-                className="w-8 h-8 border-[1px] border-neon-purple/50 rounded-full fixed top-0 left-0"
+                className="w-7 h-7 border-[1.5px] border-neon-purple/50 rounded-full fixed top-0 left-0"
                 style={{
                     x: springX,
                     y: springY,
                     translateX: '-50%',
                     translateY: '-50%',
-                    opacity: isVisible ? 1 : 0,
-                    scale: isPressed ? 1.5 : 1,
+                    opacity: isVisible && hasMoved ? 1 : 0,
+                    scale: isPressed ? 1.4 : 1,
                     rotate: isPressed ? 45 : 0
                 }}
             />
 
-            {/* Tactical Notches */}
+            {/* Tactical Crosshair Notches */}
             {[0, 90, 180, 270].map((rotation) => (
                 <motion.div
                     key={rotation}
@@ -78,9 +80,9 @@ export default function CustomCursor() {
                         y: springY,
                         rotate: rotation,
                         translateX: rotation === 0 || rotation === 180 ? (rotation === 0 ? '160%' : '-260%') : '-50%',
-                        translateY: rotation === 90 || rotation === 270 ? (rotation === 270 ? '160%' : '-260%') : '-50%',
-                        opacity: isVisible ? 0.7 : 0,
-                        scale: isPressed ? 0.5 : 1
+                        translateY: rotation === 90 || rotation === 270 ? (rotation === 270 ? '160%' : '-250%') : '-50%',
+                        opacity: isVisible && hasMoved ? 0.7 : 0,
+                        scale: isPressed ? 0.4 : 1
                     }}
                 />
             ))}

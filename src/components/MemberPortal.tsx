@@ -165,10 +165,15 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
                 // Add a timeout to the createMember call
                 const createPromise = createMember(newFirebaseMember)
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 10000)
+                    setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 15000) // Give it 15s
                 )
 
                 await Promise.race([createPromise, timeoutPromise])
+                    .catch(err => {
+                        if (err.message === 'SYNC_TIMEOUT') throw err
+                        console.error("Firestore specific error:", err)
+                        throw err
+                    })
 
                 setMember({
                     member_id: memberId,
