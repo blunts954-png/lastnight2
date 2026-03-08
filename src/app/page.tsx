@@ -89,7 +89,7 @@ export default function Home() {
 
             <main className={`min-h-screen bg-pitch-black relative ${showSplash ? 'h-screen overflow-hidden' : 'cursor-none'}`}>
                 {/* Advanced UI Overlays */}
-                {!showSplash && <CustomCursor />}
+                <CustomCursor />
                 {!showSplash && <SiteOverlay />}
 
                 {/* Anti-Gravity Starfield Background */}

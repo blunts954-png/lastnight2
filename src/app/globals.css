@@ -48,11 +48,9 @@ body {
 
 @media (min-width: 1024px) {
 
-    body,
-    a,
-    button,
-    input,
-    textarea {
+    *,
+    *::before,
+    *::after {
         cursor: none !important;
     }
 }
