@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react'
 import { motion, useSpring, useMotionValue } from 'framer-motion'
 
 export default function CustomCursor() {
+    const [isPressed, setIsPressed] = useState(false)
     const [isVisible, setIsVisible] = useState(false)
     const cursorX = useMotionValue(-100)
     const cursorY = useMotionValue(-100)
 
-    const springConfig = { damping: 25, stiffness: 150 }
+    const springConfig = { damping: 30, stiffness: 450, mass: 0.5 }
     const springX = useSpring(cursorX, springConfig)
     const springY = useSpring(cursorY, springConfig)
 
@@ -18,89 +19,71 @@ export default function CustomCursor() {
             cursorY.set(e.clientY)
         }
 
+        const handleMouseDown = () => setIsPressed(true)
+        const handleMouseUp = () => setIsPressed(false)
         const handleMouseEnter = () => setIsVisible(true)
         const handleMouseLeave = () => setIsVisible(false)
 
         window.addEventListener('mousemove', moveCursor)
-        document.body.addEventListener('mouseenter', handleMouseEnter)
-        document.body.addEventListener('mouseleave', handleMouseLeave)
+        window.addEventListener('mousedown', handleMouseDown)
+        window.addEventListener('mouseup', handleMouseUp)
+        document.addEventListener('mouseenter', handleMouseEnter)
+        document.addEventListener('mouseleave', handleMouseLeave)
 
         return () => {
             window.removeEventListener('mousemove', moveCursor)
-            document.body.removeEventListener('mouseenter', handleMouseEnter)
-            document.body.removeEventListener('mouseleave', handleMouseLeave)
+            window.removeEventListener('mousedown', handleMouseDown)
+            window.removeEventListener('mouseup', handleMouseUp)
+            document.removeEventListener('mouseenter', handleMouseEnter)
+            document.removeEventListener('mouseleave', handleMouseLeave)
         }
     }, [cursorX, cursorY])
 
     return (
         <div className="fixed inset-0 z-[10001] pointer-events-none hidden lg:block">
-            {/* Main Crosshair dot */}
+            {/* Center Dot - Zero Latency */}
             <motion.div
-                className="w-2 h-2 bg-neon-cyan/80 rounded-full fixed top-0 left-0"
+                className="w-1.5 h-1.5 bg-neon-cyan shadow-[0_0_12px_#00f0ff] rounded-full fixed top-0 left-0"
                 style={{
-                    x: springX,
-                    y: springY,
+                    x: cursorX,
+                    y: cursorY,
                     translateX: '-50%',
                     translateY: '-50%',
+                    scale: isPressed ? 0.7 : 1,
                     opacity: isVisible ? 1 : 0
                 }}
             />
 
-            {/* Expanding Circle Glow */}
+            {/* Tactical Target Ring */}
             <motion.div
-                className="w-10 h-10 border border-neon-purple/40 rounded-full fixed top-0 left-0"
+                className="w-7 h-7 border-[1.5px] border-neon-purple/50 rounded-full fixed top-0 left-0"
                 style={{
                     x: springX,
                     y: springY,
                     translateX: '-50%',
                     translateY: '-50%',
                     opacity: isVisible ? 1 : 0,
-                    scale: isVisible ? 1 : 0
+                    scale: isPressed ? 1.4 : 1, // Feedback on click
+                    rotate: isPressed ? 45 : 0
                 }}
-                transition={{ duration: 0.3 }}
             />
 
-            {/* Tactical Crosshair Lines (Subtle) */}
-            <motion.div
-                className="w-[1px] h-3 bg-neon-cyan/20 fixed top-0 left-0"
-                style={{
-                    x: springX,
-                    y: springY,
-                    translateX: '-50%',
-                    translateY: '-200%',
-                    opacity: isVisible ? 0.3 : 0
-                }}
-            />
-            <motion.div
-                className="w-[1px] h-3 bg-neon-cyan/20 fixed top-0 left-0"
-                style={{
-                    x: springX,
-                    y: springY,
-                    translateX: '-50%',
-                    translateY: '100%',
-                    opacity: isVisible ? 0.3 : 0
-                }}
-            />
-            <motion.div
-                className="w-3 h-[1px] bg-neon-cyan/20 fixed top-0 left-0"
-                style={{
-                    x: springX,
-                    y: springY,
-                    translateX: '-200%',
-                    translateY: '-50%',
-                    opacity: isVisible ? 0.3 : 0
-                }}
-            />
-            <motion.div
-                className="w-3 h-[1px] bg-neon-cyan/20 fixed top-0 left-0"
-                style={{
-                    x: springX,
-                    y: springY,
-                    translateX: '100%',
-                    translateY: '-50%',
-                    opacity: isVisible ? 0.3 : 0
-                }}
-            />
+            {/* Tactical Crosshair Notches */}
+            {[0, 90, 180, 270].map((rotation) => (
+                <motion.div
+                    key={rotation}
+                    className="w-2.5 h-[1px] bg-neon-cyan/50 fixed top-0 left-0"
+                    style={{
+                        x: springX,
+                        y: springY,
+                        rotate: rotation,
+                        translateX: rotation === 0 || rotation === 180 ? (rotation === 0 ? '160%' : '-260%') : '-50%',
+                        translateY: rotation === 90 || rotation === 270 ? (rotation === 270 ? '160%' : '-250%') : '-50%',
+                        opacity: isVisible ? 0.7 : 0,
+                        scale: isPressed ? 0.4 : 1
+                    }}
+                />
+            ))}
         </div>
     )
 }

@@ -179,7 +179,10 @@ export default function MemberPortal({ onClose, onLogin, initialStep = 'login' }
             }
         } catch (error) {
             console.error('Portal Error:', error)
-            alert('SYSTEM ERROR: UNABLE TO SYNC WITH THE GRID.')
+            const isLocal = window.location.hostname === 'localhost'
+            alert(isLocal
+                ? 'SYSTEM ERROR: UNABLE TO SYNC WITH THE GRID. CHECK CONSOLE FOR FIREBASE ERRORS.'
+                : 'GRID OFFLINE: THIS DEPLOY IS LIKELY MISSING FIREBASE KEYS. CONTACT ARCHITECT.')
         } finally {
             setLoading(false)
         }
